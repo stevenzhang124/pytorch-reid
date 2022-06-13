@@ -1,3 +1,5 @@
+*.pbO
+
 *.trt
 *.pth
 *.mp4
