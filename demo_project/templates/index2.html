@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IMCL Edge Demo</title>
+    <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <style>
+        body {
+            background-color: #F8F8FF;
+            }
+
+        .left {
+        float: left;
+        width: 1300px;
+        height: 800px;
+        
+        margin-right: -300px;
+        }
+      .right {
+        float: right;
+        width: 350px;
+        height: 800px;
+        
+        }
+        button {
+            font: inherit;
+            text-transform: uppercase;
+            height: 40px;
+            padding: 0 16px;
+            border: 1px solid #111;
+            border-radius: 4px;
+            background: none;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s;
+          --webkit-transition: all 0.3s;
+          --moz-transition: all 0.3s;
+        }
+
+        button:hover {
+            background-color: #111;
+            color: white;
+        }
+      
+    </style>
+</head>
+<body>
+<center>
+<h2>Distributed Edge Intelligence for Collaborative Real-time Video Surveillance</h2>
+</center>
+
+<div class="left">
+<center>
+<h3>Pedestrian Surveillance</h3>
+</center>
+<table>
+    <tr>
+        <td><iframe frameborder='0' scrolling="no" src="http://192.168.1.114:5000/video_feed" height='360px' width='480px' title="Iframe Example"></iframe></td>
+        <td><iframe frameborder='0' scrolling="no" src="http://192.168.1.107:5000/video_feed" height='360px' width='480px' title="Iframe Example"></iframe></td>
+        <td><iframe frameborder='0' scrolling="no" src="http://192.168.1.103:5000/video_feed" height='360px' width='480px' title="Iframe Example"></iframe></td>
+    </tr>
+    <tr>
+        <td><iframe frameborder='0' scrolling="no" src="http://192.168.1.109:5000/video_feed" height='360px' width='480px' title="Iframe Example"></iframe></td>
+        <td><iframe frameborder='0' scrolling="no" src="http://192.168.1.105:5000/video_feed" height='360px' width='480px' title="Iframe Example"></iframe></td>
+        <td><iframe frameborder='0' scrolling="no" src="http://192.168.1.102:5000/video_feed" height='360px' width='480px' title="Iframe Example"></iframe></td>
+    </tr>
+</table>
+</div>
+
+<!-- table >
+                <tr>
+                    <td><h1>116</h1><iframe class="iframe_table" frameborder='0' scrolling="no" src="http://192.168.1.107:5000/video_feed" title="Iframe Example"></iframe></td>
+                    <td><h1>106</h1><iframe class="iframe_table" frameborder='0' scrolling="no" src="http://192.168.1.114:5000/video_feed" title="Iframe Example"></iframe></td>
+                    <td><h1>115</h1><iframe class="iframe_table" frameborder='0' scrolling="no" src="http://192.168.1.103:5000/video_feed" title="Iframe Example"></iframe></td>
+                </tr>
+                <tr>
+                    <td><h1>118</h1><iframe class="iframe_table" frameborder='0' scrolling="no" src="http://192.168.1.109:5000/video_feed" title="Iframe Example"></iframe></td>
+                    <td><h1>117</h1><iframe class="iframe_table" frameborder='0' scrolling="no" src="http://192.168.1.102:5000/video_feed" title="Iframe Example"></iframe></td>
+                    <td><h1>113</h1><iframe class="iframe_table" frameborder='0' scrolling="no" src="http://192.168.1.105:5000/video_feed" title="Iframe Example"></iframe></td> -->
+                    <!-- <td><h1>118</h1><iframe class="iframe_table" frameborder='0' scrolling="no" src="http://192.168.1.109:5000/video_feed" title="Iframe Example"></iframe></td> -->
+               <!--  </tr>
+        </table> -->
+
+<div class="right">
+    <center>
+    <h3>Camera Distribution in the Indoor Environment</h3>
+    <img src="/static/cameras2.png" width="350pt">
+    <br>
+    <br>
+    <h3>Query Pedestrian Trajectory</h3>
+    
+
+    <form method = "post" id = "form">
+         <p>Person ID <input type = "text" id = "PID" name = "PersonID" /></p>
+         <button class="btn btn-lg btn-primary btn-block" type="button">Query</button>
+    </form>
+    <br>
+    <br>
+
+    <!-- ><h3>Pedestrian Trajectory</h3><-->
+
+    <table id = "table" border=1>
+
+    </table>
+    </center>
+
+    
+</div>
+
+</body>
+
+<script type="text/javascript">
+    $(function(){
+        $('button').click(function(){
+            var user = $('#PID').val();
+            $.ajax({
+                url: '/query',
+                data: $('form').serialize(),
+                type: 'POST',
+                success: function(results){
+                    alert(results);
+                    $("#table").append(results)
+
+                    //var test_data = [[1,2,3], [4,5,6]];                    
+                    //showTable(results)
+                    //for (let i = 0;  i < test_data.length; i++ ){
+                    //    item = test_data[i];
+                        //alert($("#tbody").innerHTML);
+                    //    $("#tbody").append( "<tr><td>"+item[0]+"</td>"+"<td>"+item[1]+"</td>"+"<td>"+item[2]+"</td>"+"</tr>");
+                    //}
+                },
+                error: function(error){
+                    console.log(error);
+                }
+            });
+        });
+    });
+
+    //function showTable(results){
+
+    //}
+</script>
+
+
+</html>

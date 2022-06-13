@@ -1,0 +1,27 @@
+View-HC2.mp4 
+
+With Database
+2021-11-14 17:26:38 [   DEBUG] =================Timing Stats=================
+2021-11-14 17:26:38 [    INFO] Average FPS: 19
+2021-11-14 17:26:38 [    INFO] Average tracker time:          9.607 ms
+2021-11-14 17:26:38 [    INFO] Average preprocess time:       6.560 ms
+2021-11-14 17:26:38 [    INFO] Average detector/flow time:   38.362 ms
+2021-11-14 17:26:38 [    INFO] Average feature extracter time:15.898 ms
+2021-11-14 17:26:38 [    INFO] Average association time:     19.552 ms
+2021-11-14 17:26:38 [    INFO] Average database update time: 49.999 ms
+2021-11-14 17:26:38 [    INFO] Average merge tracks time:     0.131 ms
+
+
+Without Database
+2021-11-14 17:30:16 [   DEBUG] =================Timing Stats=================
+2021-11-14 17:30:16 [    INFO] Average FPS: 33
+2021-11-14 17:30:16 [    INFO] Average tracker time:          9.042 ms
+2021-11-14 17:30:16 [    INFO] Average preprocess time:       3.654 ms
+2021-11-14 17:30:16 [    INFO] Average detector/flow time:   38.598 ms
+2021-11-14 17:30:16 [    INFO] Average feature extracter time:15.635 ms
+2021-11-14 17:30:16 [    INFO] Average association time:      6.028 ms
+2021-11-14 17:30:16 [    INFO] Average database update time:  0.103 ms
+2021-11-14 17:30:16 [    INFO] Average merge tracks time:     0.135 ms
+
+
+Bottleneck = association & database 

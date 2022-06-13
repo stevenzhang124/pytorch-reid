@@ -1,0 +1,3 @@
+Adding the ultimate(dernier) self.db_track to self.tracks then deleting it wont work because -> matches[1,2,3] don't detect (ie.they use ioucost or matching cost) and reid wont either since its not in self.lost but in self.tracks hence the program creates a new-id
+
+Potential solution: add a Reid with tracks after Reid with lost or before it even.

@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Camera Client</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/vendor/DataTables/css/datatables.min.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Merriweather');
+
+        :root{
+            --dasharray: 100;
+            --dashoffset: 100;
+            --dasharray-r: 100;
+            --dashoffset-r: 100;
+            --camera-fill: #D3D3D3;
+            --path-fill: #D3D3D3;
+            --path-fill-r: #D0CECE;
+            --transformX: none ;
+            --anim-length: 5s ;
+
+        }
+        html {
+            font-family: 'Merriweather', serif;
+            font-size: 14px;
+        }
+        body {
+            padding-top: 70px;
+        }
+
+        svg {
+            /*display: block;*/
+            width: 100%;
+            height: 100%;
+        }
+
+        circle {
+            stroke:#FFFFFF;
+            fill:#dcdcdc;
+            stroke-width:2.5;
+            r:5;
+        }
+        rect{
+            stroke: black;
+            stroke-opacity: 0.1;
+            fill: #D3D3D3;
+            stroke-width: 0.1em;
+        }
+        text{
+            display: none;
+            fill: #005cbf;
+            font-size: 1.5em;
+        }
+
+        rect[id^="Cam"]:hover + text{
+            display: block;
+        }
+
+        iframe{
+            height: 100%;
+            width: 100%;
+        }
+        
+
+        /*.iframe_table{
+            height: 360px;
+            width: 450px;
+        }
+
+        .col{
+            height: 360px;
+            width: 450px;
+        }*/
+        
+
+        .row{
+            /*border: 1px solid red;*/
+            height: 100%;
+            width: 100%;
+        }
+
+        .col{
+            /*border: 1px solid blue;*/
+            height: 100%;
+            width: 100%;
+        }
+
+        #room .first.on{
+            fill: #b81d13;
+            /*fill: #f8d7da;*/
+        }
+        #room .mid.on{
+            fill: #ffce03;
+            /*fill: #dc3545;*/
+        }
+        #room .last.on{
+            fill: #008450;
+            /*fill: #721c24;*/
+        }
+
+        #cameras *.on {
+            fill: var(--camera-fill);
+        }
+
+        .list-of-locations {
+            margin: 0;
+            padding: 0;
+            columns: 100px auto;
+            column-gap: 8px;
+            list-style: none;
+        }
+        .list-of-locations li {
+            padding: 2px 4px;
+            display: inline-block;
+            width: 100%;
+        }
+        .list-of-locations li.on {
+            background: red;
+            color: white;
+            font-weight: bold;
+        }
+
+        #room *:not(image){
+            visibility: hidden;
+        }
+
+        #room .path-dash{
+              visibility: visible;
+              fill: none;
+              stroke: var(--path-fill-r); /* this must match the background color */
+              stroke-dasharray: 20 15; /* draws a 10px dash line with a 16px gap between */
+              stroke-width: 2; /* make the dashed line slightly bigger than the one it's covering */
+        }
+
+        #room .path-line{
+            fill: none;
+            stroke-dasharray: var(--dasharray-r);
+            stroke-dashoffset: var(--dashoffset-r);
+            stroke-width:1;
+        }
+
+        #room .path-line.draw{
+            visibility: visible;
+            -webkit-animation: dash-r var(--anim-length) linear forwards;
+            -webkit-animation-delay: 3s;
+           /* -moz-animation: dash-r 5s linear forwards;
+            -moz-animation-delay: 3s;*/
+        }
+
+        #room circle.show{
+            visibility: visible;
+            -webkit-animation: fade-in 3s linear forwards;
+        }
+
+        #arrowhead polygon {
+            fill: #1c7430 ;
+            -webkit-animation: fade-in 6s linear forwards;
+            background:url("https://www.caveofprogramming.com/images/capguy-walk.png");
+        }
+
+        #walk-container {
+            visibility: hidden;
+            display: inline-block;
+            position: absolute;
+            left:0;
+            top:0;
+            width: 10%;
+            padding-bottom: 30%;
+            vertical-align: middle;
+            overflow: hidden;
+        }
+
+        #walk {
+            display: inline-block;
+            position: absolute;
+            top: 0;
+            left: 25%;
+            width: 50%;
+            height: 50%;
+            background-image: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/4273/walk-sequence.svg);
+            background-repeat: no-repeat;
+            background-size: 800%;
+            -webkit-animation: walk-anim 0.5s infinite steps(7);
+            -moz-animation: walk-anim 0.5s infinite steps(7);
+            transform: var(--transformX);
+            background-color: #cccccc;
+        }
+
+        @keyframes dash-r {
+            from {
+                stroke: #20c997;
+                stroke-dashoffset: var(--dashoffset-r);
+            }
+            to {
+                stroke: #1c7430;
+                stroke-dashoffset: 0;
+            }
+        }
+        @keyframes fade-in {
+            from{
+                /*fill: #dc3545;*/
+                fill:  #00ffee;
+                opacity: 0;
+            }
+            to{
+                opacity: 1;
+            }
+        }
+        @keyframes walk-anim {
+            to {
+                background-position: 100% 0;
+            }
+        }
+        #/*transactions_table {
+            max-width: 10%;
+        }*/
+
+        
+    </style>
+</head>
+
+<body>
+
+
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">Distributed Edge Intelligence for Collaborative Real-Time Video Surveillance</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Dashboard
+                        <span class="sr-only">(current)</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Page -->
+<div class="container-fluid px-0">
+    <div class="row no-gutters justify-content-start">
+        <div class="col-9">
+
+            <!-- Left Side -->
+            <div id="svgContainer1" class="container-fluid px-0">
+                <div class="row no-gutters">
+                <!-- Camera Frames -->
+                <div class="container-fluid px-0">
+                    <h1><u>Camera Feed</u></h1><br>
+                    
+                    <div class="row no-gutters">
+                        <div class="col">
+                            <h1>116</h1>
+                            <iframe  class="embed-responsive-item-1by1" frameborder='0' scrolling="no" src="http://192.168.1.107:5000/video_feed" title="Iframe Example" ></iframe>
+                        </div>
+                        <div class="col">
+                            <h1>113</h1>
+                            <iframe  class="embed-responsive-item-4by3" frameborder='0' scrolling="no" src="http://192.168.1.114:5000/video_feed" title="Iframe Example"></iframe>
+                        </div>
+                        <div class="col">
+                            <h1>115</h1>
+                            <iframe class="embed-responsive-item" frameborder='0' scrolling="no" src="http://192.168.1.105:5000/video_feed" title="Iframe Example"></iframe>
+                        </div>
+                    </div>
+                    <div class="row no-gutters">
+                        <div class="col">
+                            <h1>118</h1>
+                            <iframe class="embed-responsive-item" frameborder='0' scrolling="no" src="http://192.168.1.102:5000/video_feed" title="Iframe Example"></iframe>
+                        </div>
+                        <div class="col">
+                            <h1>117</h1>
+                            <iframe class="embed-responsive-item" frameborder='0' scrolling="no" src="http://192.168.1.109:5000/video_feed" title="Iframe Example"></iframe>
+                        </div>
+                        <div class="col">
+                            <h1>106</h1>
+                            <iframe class="embed-responsive-item" frameborder='0' scrolling="no" src="http://192.168.1.104:5000/video_feed" title="Iframe Example"></iframe>
+                        </div>
+                    </div> 
+                </div> 
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side -->
+        <div class="col-3">
+            <div id="svgContainer2" class="container-fluid px-0">
+                <div class="row no-gutters">
+                    <h1>Camera Distribution in the Indoor Environment</h1>
+                     <!-- Room Frame-->
+                    <svg id="svg-box" viewBox="0 0 600 625" class="svg-locations">
+                        <title>Room Tracking</title>
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7"
+                            refX="15" refY="3.5" orient="auto">
+                              <polygon points="0 0, 10 3.5, 0 7" />
+                            </marker>
+                        </defs>
+
+                        <!--    Room  -->
+                        <g id="room">
+                            <image href="/static/data/cameras600.png" height="100%" width="100%"></image>
+                            <!-- <image href="/static/data/roomPlan.png" height="600" width="625"></image> -->
+
+                        </g>
+
+                        <!-- Mannequin-->
+                        <foreignObject width="50" height="80" id="walk-container"><foreignObject id="walk"></foreignObject></foreignObject>
+                    </svg>
+
+
+
+                    <!--List of persons-->
+                    <ol class="list-of-locations"></ol>
+
+                    <!-- Pedestrians Table -->
+                    <div class="table-responsive">
+                        <h1>Pedestrian Trajectory Query</h1>
+                        <select class="float-sm-right" name="persons" id="persons" onchange="queryFunction(this)" >
+                            <option value="" selected disabled>Select a Person</option>
+                        </select>
+                        <table id="transactions_table" class="display responsive no-wrap" cellspacing="0" width="100%">
+                        <tfoot>
+                            <tr>
+                                <th>&nbsp;</th>
+                                <th>&nbsp;</th>
+                                <th>&nbsp;</th>
+                                <th>&nbsp;</th>
+                                <th>&nbsp;</th>
+                                <th>&nbsp;</th>
+                                <th>&nbsp;</th>
+                                <th>&nbsp;</th>
+                            </tr>
+                        </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Bootstrap core JavaScript -->
+<script src="/static/vendor/jquery/jquery.min.js"></script>
+<script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="/static/vendor/DataTables/js/datatables.min.js"></script>
+<script src="/static/vendor/DataTables/js/ellipsis.js"></script>
+
+
+<script>
+
+    var table
+
+
+    function sortFunction(a, b) {
+        if (a[1] === b[1]) {
+            return 0;
+        }
+        else {
+            return (a[1] < b[1]) ? -1 : 1;
+        }
+    }
+
+    function roomPath(person_id, filteredArray){
+        let cams = []
+        let coord = []
+        filteredArray.forEach(function (locat){
+            cams.push(locat[2])
+        })
+
+        let circleLocation
+        for (let i = 0; i < cams.length; i++) {
+            let helpersLocation
+            circleLocation = [filteredArray[i][3], filteredArray[i][4]]
+            switch (cams[i]){
+                case 106:
+                    {circleLocation= [360, 200]}
+                    if (i < cams.length - 1){
+                        switch (cams[i+1]){
+                            case 118:
+                            case 113:
+                                helpersLocation = [220,240, 220,350]
+                                break
+                            case 115:
+                                helpersLocation = [360,300]
+                                break
+                            case 116:
+                                helpersLocation = [430,200]
+                                break
+                        }
+
+                    }
+                    break
+                case 113:
+                    {circleLocation= [260, 400]}
+                    if (i < cams.length - 1){
+                        switch (cams[i+1]){
+                            case 106:
+                                helpersLocation = [220,350, 220,240]
+                                break
+                            case 116:
+                                helpersLocation = [330,335, 450,335]
+                                break
+                        }
+
+                    }
+                    break
+                case 115:
+                    {circleLocation= [390, 390]}
+                    if (i < cams.length - 1){
+                        switch (cams[i+1]){
+                            case 106:
+                                helpersLocation = [360,300]
+                                break
+                            case 117:
+                            case 118:
+                                helpersLocation = [260,340, 240,330]
+                                break
+
+                        }
+
+                    }
+                    break
+                case 116:
+                    {circleLocation= [480, 290]}
+                    if (i < cams.length - 1){
+                        switch (cams[i+1]){
+                            case 106:
+                            // case 117:
+                                helpersLocation = [430,200]
+                                break
+                            case 113:
+                                helpersLocation = [450,335, 330,335]
+                                break
+                            case 117:
+                            case 118:
+                                helpersLocation = [450,335, 330,335, 220,335 ]
+                                break
+                        }
+
+                    }
+                    break
+                case 117:
+                    {circleLocation= [220,220]}
+                    if (i < cams.length - 1){
+                        switch (cams[i+1]){
+                            case 115:
+                                helpersLocation = [240,330, 260,340]
+                                break
+                            case 116:
+                                helpersLocation = [220,335, 330,335, 450,335]
+                                break
+                            case 118:
+                                helpersLocation = [220,335]
+                                break
+                        }
+                    }
+                    break
+                case 118:
+                    {circleLocation= [150, 350]}
+                    if (i < cams.length - 1){
+                        switch (cams[i+1]){
+                            case 106:
+                                helpersLocation = [220,350, 220,240]
+                                break
+                            case 115:
+                                helpersLocation = [240,330, 260,340]
+                                break
+                            case 116:
+                                helpersLocation = [220,335, 330,335, 450,335]
+                                break
+                            case 117:
+                                helpersLocation = [220,335]
+                                break
+                        }
+                    }
+                    break
+            }
+            coord.push(circleLocation)
+            // if (helpersLocation){coord.push(helpersLocation)}
+            if (i === 0) {
+                $('#room').append(`<circle class="first"  r="5" id="${person_id + "_Cam" + cams[i]}" cx="${circleLocation[0]}" cy="${circleLocation[1]}"/>`);
+
+            } else if (i === filteredArray.length - 1) {
+                $('#room').append(`<circle class="last"  r="5" id="${person_id + "_Cam" + cams[i]}" cx="${circleLocation[0]}" cy="${circleLocation[1]}"/>`);
+
+            } else {
+                $('#room').append(`<circle class="mid" r="5" id="${person_id + "_Cam" + cams[i]}" cx="${circleLocation[0]}" cy="${circleLocation[1]}"/>`);
+
+            }
+
+        }
+
+        console.log("Init Coordinates are",coord)
+        var coord1 = coord.join(", ")
+        console.log("Room Coordinates are",cams,coord,coord1)
+
+        $('#room').append(`<path class="path-line" id="${person_id+"_Room"}" d="${"M " + coord1}" marker-end="url(#arrowhead"/>`);
+        return coord
+        // $('#room').append(`<path class="path-dash" id="${person_id+"_Room"}" d="${"M " + coord}" />`);
+
+    }
+
+    function refreshContainer(){
+        // Refresh container
+        // $('#svgContainer2').html($('#svgContainer2').html());
+        // $('#svgContainer1').html($('#svgContainer1').html());
+        $('#svg-box').html($('#svg-box').html());
+
+    }
+
+    function getPersons(){
+        $.ajax({
+            url: "/queryPersons",
+            type: 'GET',
+            success: function(response) {
+                console.log("The persons are", response)
+                $('#persons').empty()
+                for (i = 0; i < response.length; i++) {
+                    var person_id = response[i][0]
+
+                    if (document.querySelectorAll(`#persons option[value="${person_id}"]`).length === 0) {
+                        console.log("New person added", person_id)
+                        $('#persons')
+                            .append(`<option value="" selected disabled hidden>Choose here</option>`)
+                            .append(`<option value="${person_id}">${person_id}</option>`);
+                    }
+                }
+
+
+            },
+          error: function(error){
+            console.log(error);
+          }
+        });
+
+    }
+
+    function initTable() {
+        var transactions = []
+        // Restrict a column to 10 characters, do split words
+              table = $('#transactions_table').DataTable({
+                dom: 'Bfrtip',
+                buttons : [
+                    'colvis'
+                ],
+                "lengthChange": false,
+                "searching": false,
+                data: transactions,
+                columns: [
+                    {title: "Person ID"},
+                    {title: "Camera"},
+                    {title: "Timestamp"},
+                    {title: "Gender"},
+                    {title: "Age"},
+                    {title: "Hair"},
+                    {title: "Luggage"},
+                    {title: "Attire"}
+                ],
+                columnDefs: [
+                    { targets: [0], className:'text-center bg-warning' },
+                    {
+                      targets: [1, 2, 3, 4, 5, 6, 7],
+                      render: $.fn.dataTable.render.ellipsis(100),
+                      select: true,
+                      className: 'bg-light'
+                    }
+                ],
+              });
+        $('thead tr th').removeClass("bg-warning bg-light bg-success").addClass("bg-dark text-white");
+        $('tfoot tr th').removeClass("bg-warning bg-light bg-success text-left text-center text-right").addClass("bg-dark text-white");
+        $('tfoot tr th:eq(1)').addClass("text-left");
+        $('tfoot tr th:eq(6)').addClass("text-right");
+    }
+
+    function addListeners(){
+
+        function removeAllOn() {
+            wordLocations.forEach(function(el) {
+                el.classList.remove("on");
+            });
+            svgLocations.forEach(function(el) {
+                el.classList.remove("on");
+            });
+        }
+
+        function addOnFromList(el) {
+            var locationCode = el.getAttribute("data-location");
+            console.log("Location code is ", locationCode)
+            var svgLocations = document.querySelectorAll("[id^='" + locationCode + "']");
+            console.log("SVG of locations",svgLocations)
+            el.classList.add("on");
+            svgLocations.forEach(function(person_location) {
+                person_location.classList.add("on");
+            });
+        }
+
+        function addOnFromLocation(el) {
+            var locationId = el.getAttribute("id").substring(8,0)
+            console.log("Location ID is ", locationId)
+            var wordLocation = document.querySelector("[data-location^='" + locationId + "']");
+            el.classList.add("on");
+            wordLocation.classList.add("on");
+        }
+
+        var wordLocations = document.querySelectorAll(".list-of-locations li");
+        var svgLocations = document.querySelectorAll("#room > circle");
+
+        console.log("wordLocations", wordLocations)
+        console.log("svgLocations", svgLocations)
+
+        wordLocations.forEach(function(el) {
+            el.addEventListener("mouseenter", function() {
+                addOnFromList(el);
+            });
+            el.addEventListener("mouseleave", function() {
+                removeAllOn();
+            });
+
+            el.addEventListener("touchstart", function() {
+                removeAllOn();
+                addOnFromList(el);
+            });
+        });
+
+        svgLocations.forEach(function(el) {
+            el.addEventListener("mouseenter", function() {
+                addOnFromLocation(el);
+            });
+            el.addEventListener("mouseleave", function() {
+                removeAllOn();
+            });
+
+            el.addEventListener("touchstart", function() {
+                removeAllOn();
+                addOnFromLocation(el);
+            });
+        });
+
+    }
+
+    function initPath(response){
+        console.log("Before sorting",response)
+        response.sort(sortFunction)
+        var seen = new Set
+        var unique_response = response.filter(([value]) => !seen.has(value) && seen.add(value));
+        console.log("Unique response",unique_response)
+
+        for (i = 0; i < unique_response.length; i++) {
+            var person_id = unique_response[i][0]
+
+            var filteredArray = response.filter(item => item.indexOf(person_id) > -1);
+            console.log("Filtered",person_id,filteredArray)
+
+            for (j = 0; j < filteredArray.length; j++) {
+                var camera_num = filteredArray[j][2]
+                var pos_x = filteredArray[j][3]
+                var pos_y = filteredArray[j][4]
+                
+
+                // Add circles and lines
+                if (j === 0) {
+                    console.log("Sent to roomPath",person_id,j,pos_x,pos_y,filteredArray)
+                    var coord = roomPath(person_id, filteredArray)
+                }
+                // Add "current person" to list if not already there
+                if (document.querySelectorAll(`.list-of-locations li[data-location="${person_id}"]`).length === 0) {
+                    console.log("Not there", person_id)
+                    $('.list-of-locations').append(`<li data-location="${person_id}">${person_id}</li>`);
+                }
+            }
+        }
+        refreshContainer()
+        return coord
+    
+    }
+
+    function queryFunction(selectPerson){
+
+        function animationFunction(coordinates){
+            // Animate circles
+            var circleLocations = document.querySelectorAll(`#room circle[id^="${person}"]`)
+            console.log("Circles are",circleLocations)
+            circleLocations.forEach(function(el) {
+                el.classList.add("show");
+            });
+
+            // Animate lines
+            var pathLocations = document.querySelectorAll(`.path-line[id^="${person}"]`)
+            console.log("Path Locations are ",pathLocations,document.querySelectorAll("#room path"))
+            var lengthPath;
+            pathLocations.forEach(function(el) {
+                lengthPath = el.getTotalLength();
+                document.querySelector(`#room .path-line[id^="${person}"]`).style.setProperty("--dashoffset-r",lengthPath)
+                document.querySelector(`#room .path-line[id^="${person}"]`).style.setProperty("--dasharray-r",lengthPath)
+                console.log("Length path", lengthPath)
+                el.classList.add("draw");
+            });
+
+            // Animate walking mannequin
+            var animation = []
+
+            if (coordinates.length < 2){
+                animation.push(
+                        {
+                            visibility: "visible",
+                            transform: `translateX(${coordinates[0][0]}px) translateY(${coordinates[0][1]}px) `
+                        }, {
+                          visibility: "visible",
+                          transform: `translateX(${coordinates[0][0]}px) translateY(${coordinates[0][1]}px) ` }
+                    )
+            }
+            else {
+                coordinates = coordinates.flat()
+                console.log("flat",coordinates)
+                for (let i = 2; i < coordinates.length; i+=2) {
+                    if (coordinates[i-2] > coordinates[i]){
+                        document.querySelector(`#walk`).style.setProperty("--transformX","scaleX(-1)")
+                    }else {
+                        document.querySelector(`#walk`).style.setProperty("--transformX","none")
+                    }
+                    animation.push(
+                            {
+                                visibility: "visible",
+                                transform: `translateX(${coordinates[i - 2]}px) translateY(${coordinates[i - 1]}px) `
+                            },
+                            {
+                                visibility: "visible",
+                                transform: `translateX(${coordinates[i]}px) translateY(${coordinates[i + 1]}px) `
+                            }
+                        )
+                    // Add final stop
+                    if (i === coordinates.length - 2) {
+                        animation.push(
+                            {
+                                visibility: "visible",
+                                transform: `translateX(${coordinates[i]}px) translateY(${coordinates[i + 1]}px) `
+                            })
+                    }
+                }
+            }
+            console.log("Animations",animation)
+
+            var anim_len = animation.length/10 + 's'
+            console.log("Animation takes",anim_len)
+
+            document.querySelector(`#room .path-line.draw`).style.setProperty("--anim-length",anim_len)
+            document.getElementById('walk-container').animate(
+                animation,{
+                    // timing options
+                    delay:3000,
+                    duration: animation.length * 500,
+                    iterations: Infinity
+                });
+
+        }
+
+        var person = selectPerson.value
+
+        var circleLocations = document.querySelectorAll(`#locations circle, #room circle`)
+        var pathLocations = document.querySelectorAll(`.path-line`)
+        var svgLocations = document.querySelectorAll('#room *:not(image)')
+        var listLocations = document.querySelectorAll('.list-of-locations li')
+
+        console.log("Selected person",person)
+        circleLocations.forEach(function(el) {
+            el.classList.remove("show");
+        });
+        pathLocations.forEach(function(el) {
+            el.classList.remove("draw");
+        });
+        svgLocations.forEach(function(el) {
+            el.remove();
+        });
+        listLocations.forEach(function(el) {
+            el.remove();
+        });
+
+        $.ajax({
+            url: "/query",
+            data: {"person":person},
+            type: 'POST',
+            success: function(response) {
+                console.log("The response table is", response)
+                var transactions = [];
+                var personInfo = []
+
+                for (i = 0; i < response.length; i++) {
+                    var person_id = response[i][0]
+                    var camera_id = response[i][2]
+                    var gender = response[i][5]
+                    var age = response[i][6]
+                    var hair = response[i][7]
+                    var luggage = response[i][8]
+                    var attire = response[i][9]
+                    //format date
+                    var options = {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit"};
+                    var date = new Date(response[i][1] * 1000);
+                    var formattedDateTime = date.toLocaleTimeString("en-us", options);
+
+                    personInfo = [
+                        person_id,
+                        camera_id,
+                        formattedDateTime,
+                        gender,
+                        age,
+                        hair,
+                        luggage,
+                        attire
+                    ];
+                    transactions.push(personInfo);
+
+
+                    if (document.querySelectorAll(`#persons option[value="${person_id}"]`).length === 0) {
+                        console.log("New person added", person_id)
+                        $('#persons')
+                            .empty()
+                            .append(`<option value="" selected disabled hidden>Choose here</option>`)
+                            .append(`<option value="${person_id}">${person_id}</option>`);
+                    }
+                }
+
+                console.log("TRANSACTIONS IS ",transactions)
+
+
+                // Re-init table if it contains data
+                table.clear().draw(false)
+                table.rows.add(transactions).draw(false);
+
+
+                var coordinates = initPath(response)
+
+                addListeners()
+
+                animationFunction(coordinates)
+
+            },
+          error: function(error){
+            console.log(error);
+          }
+        });
+
+    }
+
+    function getHomography(){
+        $.ajax({
+            url: "/getHomography",
+            type: 'GET',
+            success: function(response) {
+                console.log("The homography matrices have been initilaized with length",response)
+            },
+              error: function(error){
+                console.log(error);
+              }
+        });
+
+    }
+
+    // Init Database, call functions, etc
+
+    $(function(){
+        
+        getHomography()
+
+        initTable()
+    })
+
+    function instantiate() {
+        
+        getPersons()
+
+        setTimeout(instantiate, 10000);
+    }
+
+    instantiate()
+    // $('#i1').on('load', function(){ 
+    //     console.log("INSIDE")
+    //     alert('iframe loaded');
+    // });
+    //  $('#i2').on('load', function(){ 
+    //     console.log("INSIDE222222")
+
+    //      alert('iframe loaded');
+    // });
+
+</script>
+
+</body>
+
+</html>

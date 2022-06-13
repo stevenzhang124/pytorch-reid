@@ -1,0 +1,19 @@
+2021-09-29 20:58:40 [   DEBUG] =================Timing Stats=================
+2021-09-29 20:58:40 [    INFO] Average FPS: 50
+2021-09-29 20:58:40 [    INFO] Average tracker time:          7.801 ms
+2021-09-29 20:58:40 [    INFO] Average preprocess time:       3.369 ms
+2021-09-29 20:58:40 [    INFO] Average detector/flow time:   38.977 ms
+2021-09-29 20:58:40 [    INFO] Average feature extracter time:15.123 ms
+2021-09-29 20:58:40 [    INFO] Average association time:      5.814 ms
+2021-09-29 20:58:40 [    INFO] Average database update time:  0.009 ms
+
+Database
+
+2021-09-29 21:03:31 [   DEBUG] =================Timing Stats=================
+2021-09-29 21:03:31 [    INFO] Average FPS: 29
+2021-09-29 21:03:31 [    INFO] Average tracker time:          8.238 ms
+2021-09-29 21:03:31 [    INFO] Average preprocess time:       5.374 ms
+2021-09-29 21:03:31 [    INFO] Average detector/flow time:   39.046 ms
+2021-09-29 21:03:31 [    INFO] Average feature extracter time:15.243 ms
+2021-09-29 21:03:31 [    INFO] Average association time:     16.445 ms
+2021-09-29 21:03:31 [    INFO] Average database update time: 61.898 ms
