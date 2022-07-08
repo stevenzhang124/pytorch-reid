@@ -1,3 +1,5 @@
+''' re-identification of this version is mor robust then PQ_504'''
+
 from types import SimpleNamespace
 from collections import OrderedDict, deque
 import itertools
@@ -279,17 +281,17 @@ class MultiTracker:
             cost = self._reid_cost(lost_ids, u_detections, u_embeddings, 1)
             # print("LOST_IDS",lost_ids)
             # print("U_DET_IDS",u_det_ids)
-            lost_matches, u_trk_ids4, u_det_idsL = greedy_match(cost, lost_ids, u_det_ids,
+            lost_matches, u_trk_ids4, u_det_ids = greedy_match(cost, lost_ids, u_det_ids,
                                                             self.max_reid_cost, 1, "Lost")
         
         with Profiler('mdb'):   
             # Re-id with DB tracks
             db_ids = list(self.db_tracks.keys())
-            # u_detections, u_embeddings = detections[u_det_ids], embeddings[u_det_ids]
+            u_detections, u_embeddings = detections[u_det_ids], embeddings[u_det_ids]
             cost = self._reid_cost(db_ids, u_detections, u_embeddings, 2)
-            db_matches, u_trk_ids5, u_det_idsD = greedy_match(cost, db_ids, u_det_ids,
+            db_matches, u_trk_ids5, u_det_ids = greedy_match(cost, db_ids, u_det_ids,
                                                             self.max_reid_cost, 1, "DB")
-            u_det_ids = list(set(u_det_idsL).intersection(u_det_idsD))
+            # u_det_ids = list(set(u_det_idsL).intersection(u_det_idsD))
 
             _to_remove_lost = []
             _to_remove_db = []
@@ -320,63 +322,6 @@ class MultiTracker:
             matches, u_trk_ids = self._rectify_matches(matches, u_trk_ids, detections)
             updated_found = []
 
-        with Profiler('mcomb'):   
-            if len(lost_matches) > 0:
-                for db_trk_id, det_id in db_matches:
-                    lost_trk_id = [trk_id1 for trk_id1, det_id1 in lost_matches if det_id == det_id1]
-                    #print("COMBY TRK=",lost_trk_id)
-                    if len(lost_trk_id) == 0:
-                        continue
-                    else:
-                        pass
-                        #print("LOST_MATCHES =", lost_matches)
-                        #print("DB_MATCHES =", db_matches)
-                    lost_trk_id = lost_trk_id[0]
-                    
-                    if db_trk_id < lost_trk_id:
-                        old_id = lost_trk_id
-                        new_id = db_trk_id
-                        old_track = self.lost.pop(lost_trk_id)
-                        new_track = self.db_tracks.pop(db_trk_id)
-                    else:
-                        old_id = db_trk_id
-                        new_id = lost_trk_id
-                        old_track = self.db_tracks.pop(db_trk_id)
-                        new_track = self.lost.pop(lost_trk_id)
-
-                    _to_remove_lost.append((lost_trk_id,det_id))
-                    _to_remove_db.append((db_trk_id,det_id))
-                
-                    # #print("ELEMENTS: old_id={}, new_id={}, old_track={}, new_track={}".format(old_id, new_id, old_track, new_track))
-                    print("DB_MATCHES",db_matches)
-                    print("LOST_MATCHES",lost_matches)
-                    print("Pre-change",self.tracks)
-                    det = detections[det_id]
-                    LOGGER.info(f"{'Imposter(COMB):':<14}{old_track}")
-                    LOGGER.info(f"{'Original(COMB):':<14}{new_track}")
-                    LOGGER.info(f"{'TLBR(COMB):':<14}{get_center(det.tlbr)}")
-                    state = self.kf.create(det.tlbr)
-                    new_track.merge_continuation(old_track)
-                    new_track.reinstate(frame_id, det.tlbr, state, embeddings[det_id])
-                    new_track.direction = 1
-                    self.tracks[new_id] = new_track
-                    LOGGER.debug(f"{'Merged(COMB):':<14}{old_id} -> {new_id}")
-                    print("Post-change",self.tracks)
-                    if self.database:
-                        #attr_data = self.par.predict(crop(frame, new_track.tlbr))
-                        attr_data = None, None, None, None, None 
-                        self.database.insert_record(new_id, new_track.tlbr[2], new_track.tlbr[3], attr_data)
-                    self.duplicates.append(old_id)
-                    if self.tracks[new_id].hits >= 10 and self.database:
-                        pass
-                        self.database.update_record(new_id , old_id)
-                        self.database.update_idtrack(new_id, old_id, 1, self.camera)
-                # #print("_to_remove_db=",_to_remove_db)
-                # #print("_to_remove_lost=",_to_remove_lost)
-                for k,v in _to_remove_db:
-                    db_matches.remove((k,v))
-                for k,v in _to_remove_lost:
-                    lost_matches.remove((k,v))
         
         with Profiler('rlost'):   
             # reactivate matched lost tracks
@@ -419,7 +364,7 @@ class MultiTracker:
                     continue
                 track = self.lost.pop(trk_id)
                 det = detections[det_id]
-                LOGGER.info(f"{'Reidentified:':<14}{track}")
+                LOGGER.info(f"{'Re-localized:':<14}{track}")
                 updated_found.append((trk_id, det_id))
                 state = self.kf.create(det.tlbr)
                 track.reinstate(frame_id, det.tlbr, state, embeddings[det_id])
@@ -491,65 +436,6 @@ class MultiTracker:
                     self.database.update_nextid(self.next_id)
                 self.next_id = max(self.next_id + 1, self.database.get_nextid()) if self.database else self.next_id + 1
             
-        # with Profiler('aged'):   
-            # aged = [(trk_id,trk_id) for trk_id in u_trk_ids
-            #             if self.isExistTrkID(trk_id, 0) and self.tracks[trk_id].confirmed and self.tracks[trk_id].active]
-            # aged_trk = [trk_id for trk_id, det_id in aged]
-            # #print("AGED ={}".format(aged))
-            # #print("UPDATED ={}".format(updated_found))
-
-            # # Reid aged
-            # c_det_ids = [det_id for trk_id, det_id in updated_found]
-            # u_detections, u_embeddings = detections[c_det_ids], embeddings[c_det_ids]
-            # aged_all = {}
-            # for trk_id in aged_trk:
-            #     aged_all[trk_id] = self.tracks[trk_id]
-            # # for trk_id, track in self.tracks.items():
-            # #     if trk_id in aged_trk:
-            # #         aged_all[trk_id] = track
-            # cost_aged = self._reid_cost(aged_trk, u_detections, u_embeddings, 3, aged_all)
-            # aged_matches, _, _ = greedy_match(cost_aged, aged_trk, c_det_ids, self.max_reid_cost, 1, "Reid-Aged")
-            # if len(aged_matches) > 0:
-            #     print("AGED_MATCHES =", aged_matches)
-            #     print("LOST_MATCHES =", lost_matches)
-
-            # for aged_trk_id, det_id in aged_matches:
-            #     lost_trk_id = [trk_id1 for trk_id1, det_id1 in lost_matches if det_id == det_id1]
-            #     #print("MATCHES TRK=",lost_trk_id)
-            #     if len(lost_trk_id) == 0:
-            #         continue
-            #     lost_trk_id = lost_trk_id[0]
-
-            #     if aged_trk_id < lost_trk_id:
-            #         old_id = lost_trk_id
-            #         new_id = aged_trk_id
-            #     else:
-            #         continue
-            #         # old_id = aged_trk_id
-            #         # new_id = lost_trk_id
-            #     print("Pre-change =",self.tracks)
-            #     old_track = self.tracks.pop(old_id)
-            #     new_track = self.tracks[new_id]
-
-            #     # det = detections[det_id]
-            #     LOGGER.info(f"{'Redundant:':<14}{old_track}")
-            #     # state = self.kf.create(det.tlbr)
-            #     # new_track.reinstate(frame_id, old_track.tlbr, state, embeddings[det_id])
-            #     print("MERGE CONTINUATION:",min(new_track.trk_id, old_track.trk_id) )
-            #     new_track.merge_continuation(old_track)
-            #     self.tracks[new_id] = new_track
-            #     LOGGER.debug(f"{'Merged:':<14}{old_id} -> {new_id}")
-            #     print("Post-change =",self.tracks)
-
-            #     if self.database:
-            #         #attr_data = self.par.predict(crop(frame,new_track.tlbr))
-            #         attr_data = None, None, None, None, None 
-            #         self.database.insert_record(new_id, new_track.tlbr[2], new_track.tlbr[3], attr_data)
-            #         self.duplicates.append(old_id)
-            #     if new_track.hits >= 10 and self.database:
-            #         pass
-            #         self.database.update_record(new_id ,old_id)
-            #         self.database.update_idtrack(new_id, old_id, 1, self.camera)
 
     def getTypesDict(self, dicto):
         for key, elem in dicto.items():
@@ -636,7 +522,7 @@ class MultiTracker:
                 # print("ADDED {} to DB tracks --> {}". format(db_track.trk_id, db_track))
 
     def _merge_tracks(self):
-        print("+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+")
+        # print("+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+")
 
         lost_ids = [trk_id for trk_id, track in self.lost.items()
                         if track.avg_feat.count >= 2]
@@ -657,6 +543,10 @@ class MultiTracker:
         
         merge_matches, _, _ = greedy_match(cost, lost_ids, db_ids,
                                                         self.max_reid_cost, 1, "MERGER")
+        
+        # print("FEATURES SHAPE",features.shape)
+        # print("EMBEDDINGS SHAPE",embeddings.shape)
+        # print("MERGE_MATCHES",merge_matches)
 
         for lost_trk_id, db_trk_id in merge_matches:
             if db_trk_id < lost_trk_id:
@@ -789,39 +679,32 @@ class MultiTracker:
             return np.empty((n_hist, n_det))
         
         lc = [dico[trk_id].avg_feat()
-                                   for trk_id in dico_ids if dico[trk_id].avg_feat() is not None] #Cond for occluded tracks
+                                   for trk_id in dico_ids if dico[trk_id].avg_feat.count >= 2 ] #Cond for occluded tracks
 
         nones = [trk_id for trk_id in dico_ids if dico[trk_id].avg_feat() is None]
-        if len(nones) > 0:
-            for elem in nones:
-                del dico[elem]
-            n_hist -= len(nones)
+        if len(lc) > 0:
+            n_hist = len(lc)
+            if len(nones) > 0:
+                for elem in nones:
+                    del dico[elem]
+            # print("lc concat",np.concatenate(lc).shape)
+            features = np.concatenate(lc).reshape(n_hist, -1)
+            # print("Feat_shape",features.shape)
+            # print("embeddings_shape", embeddings.shape)
+            cost = cdist(features, embeddings, self.metric)
+            # print("COST ",cost)
 
-        # if dicto:
-        #     print("dico",dico)
-        #     print("dico_ids",dico_ids)
-        #     print("LC = {} / n_hist = {}".format(len(lc),n_hist)) 
-        #     if len(nones) > 0:
-        #         print("Nones are {}".format(nones))
-        #     if len(lc) > 0:
-        #         for elem in lc:
-        #             print("Start of elements is  === {}".format(elem[:20]))          
+            t_labels = np.fromiter((t.label for t in dico.values()), int, n_hist)
+            gate_cost(cost, t_labels, detections.label)
 
-        features = np.concatenate(lc).reshape(n_hist, -1)
-        cost = cdist(features, embeddings, self.metric)
-        # print("COST ",cost)
-
-        t_labels = np.fromiter((t.label for t in dico.values()), int, n_hist)
-        gate_cost(cost, t_labels, detections.label)
-
-        # print("LC[0] SHAPE",lc[0].shape)
-        # print("FEATURES SHAPE",features.shape)
-        # print("EMBEDDINGS SHAPE",embeddings.shape)
-        # print("DETECTIONS SHAPE",detections.shape)
-        # print("T_LABELS",t_labels)
-        # print("GATE COST ",cost)
-        # print("DETECTIONS STRAIGHT UP !",detections)
-        return cost
+            # print("LC[0] SHAPE",lc[0].shape)
+            # print("FEATURES SHAPE",features.shape)
+            # print("EMBEDDINGS SHAPE",embeddings.shape)
+            # print("DETECTIONS SHAPE",detections.shape)
+            # print("T_LABELS",t_labels)
+            # print("GATE COST ",cost)
+            # print("DETECTIONS STRAIGHT UP !",detections)
+            return cost
 
     def _rectify_matches(self, matches, u_trk_ids, detections):
         matches, u_trk_ids = set(matches), set(u_trk_ids)

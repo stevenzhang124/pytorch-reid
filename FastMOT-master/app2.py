@@ -265,13 +265,14 @@ def main():
         with Profiler('app') as prof:
             while not args.gui or cv2.getWindowProperty("Video", 0) >= 0:
                 frame = stream.read()
-                frame_time = stream.get_frame_time()
+                # frame_time = stream.get_frame_time()
                 if frame is None:
                     break
 
                 if args.mot:
                     # t1 = time.time()
-                    mot.step(frame, frame_time)
+                    # mot.step(frame, frmae_time)
+                    mot.step(frame)
                     # t2 = time.time()
                     # write_log(t2-t1)
                     # avg_fps = min(stream.cap_fps,1 / (time.perf_counter() - tic))

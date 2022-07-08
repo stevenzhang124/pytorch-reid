@@ -85,8 +85,8 @@ def draw_doors(frame, flag, camera):
     # door2_ltrb = (550, 250), (640, 450)
 
 
-    color1 = 32,24,16 # black
-    color2 = 21,231,254 #Yellow
+    color1 = 32,24,16 # Black
+    color2 = 21,231,254 # Yellow
     TEXT_FACE = cv2.FONT_HERSHEY_DUPLEX
     TEXT_SCALE = 0.5
     TEXT_THICKNESS = 2
@@ -162,7 +162,6 @@ def draw_doors(frame, flag, camera):
         #     text_origin = (int(y - text_size[0] / 2), int(x + text_size[1] / 2))
         #     cv2.rectangle(frame, door1_ltrb[0], door1_ltrb[1], color1, -1) # Door 1
         #     cv2.putText(frame,TEXT, text_origin, TEXT_FACE, TEXT_SCALE, color2, TEXT_THICKNESS, cv2.LINE_AA )
-
 
 
 def draw_feature_match(frame, prev_pts, cur_pts, color):
