@@ -123,4 +123,5 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-p', '--port', required=True, type=int, help='port to listen on')
     args = parser.parse_args()
+    application.jinja_env.auto_reload = True
     application.run(port=args.port, debug=True)
